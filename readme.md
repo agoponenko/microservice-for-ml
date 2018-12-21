@@ -1,0 +1,1 @@
+docker exec -it flasltest_flask_1 bash
