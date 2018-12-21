@@ -1,5 +1,9 @@
-from flask import Flask
+from flask import Flask, request, jsonify
+import numpy as np
+from sklearn.externals import joblib 
+
 app = Flask(__name__)
+knn = joblib.load('knn.jbl')
 
 @app.route('/')
 def hello_world():
@@ -25,34 +29,23 @@ def avg(nums):
 
 @app.route('/iris/<params>')
 def iris(params):
-
     params = params.split(',')
     params = [float(param) for param in params]
-
-    print(params)
-
-    import numpy as np
-    from sklearn import datasets
-    iris = datasets.load_iris()
-    iris_X = iris.data
-    iris_y = iris.target
-
-    np.random.seed(0)
-    indices = np.random.permutation(len(iris_X))
-    iris_X_train = iris_X[indices[:-10]]
-    iris_y_train = iris_y[indices[:-10]]
-    iris_X_test = iris_X[indices[-10:]]
-    iris_y_test = iris_y[indices[-10:]]
-
-    from sklearn.neighbors import KNeighborsClassifier
-    knn = KNeighborsClassifier()
-    knn.fit(iris_X_train, iris_y_train) 
-    KNeighborsClassifier(algorithm='auto', leaf_size=30, metric='minkowski',
-            metric_params=None, n_jobs=None, n_neighbors=5, p=2,
-            weights='uniform')
-
     params = np.array(params).reshape(1,-1)
-
     predictions = knn.predict(params)
-    
     return str(predictions)
+
+@app.route('/show_image')
+def show_image():
+    return  '<img src="/static/setosa.jpg" alt="setosa">' # works only on /static wtf?
+
+
+@app.route('/iris_post', methods=['GET', 'POST'])
+def add_message():
+    content = request.get_json()
+    params = content['flower'].split(',')
+    params = [float(param) for param in params]
+    params = np.array(params).reshape(1,-1)
+    predictions = knn.predict(params)
+    predictions = {'class':str(predictions[0])}
+    return jsonify(predictions)
